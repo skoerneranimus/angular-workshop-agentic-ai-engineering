@@ -31,20 +31,6 @@ import { Book } from './book';
           </p>
           <p *ngIf="book.isbn" class="text-xs text-gray-500 mt-2">ISBN: {{ book.isbn }}</p>
         </div>
-        <div class="px-5 pb-4 mt-2 flex flex-col space-y-2">
-          <a
-            [routerLink]="['/books', book.id]"
-            class="block w-full text-center py-2 text-blue-600 border border-blue-600 rounded hover:bg-blue-50 transition-colors"
-          >
-            View Details
-          </a>
-          <a
-            [routerLink]="['/books', book.id, 'edit']"
-            class="block w-full text-center py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-          >
-            Edit Book
-          </a>
-        </div>
       </div>
     </div>
   `
