@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Book } from './book';
-import { BookApiClient } from './book-api-client.service';
+import { BookApiClient, PaginatedResponse } from './book-api-client.service';
 import { BookItemComponent } from './book-item.component';
 
 @Component({
@@ -83,6 +83,52 @@ import { BookItemComponent } from './book-item.component';
             </div>
           }
         </div>
+
+        <!-- Pagination -->
+        @if (books().length > 0 && totalPages() > 1) {
+          <div class="flex flex-col sm:flex-row items-center justify-between mt-8 gap-4">
+            <!-- Results info -->
+            <div class="text-sm text-gray-600">
+              Showing {{ (currentPage() - 1) * pageSize() + 1 }} to
+              {{ Math.min(currentPage() * pageSize(), totalCount()) }} of {{ totalCount() }} results
+            </div>
+
+            <!-- Pagination controls -->
+            <nav class="flex items-center space-x-1">
+              <!-- Previous button -->
+              <button
+                (click)="goToPreviousPage()"
+                [disabled]="!canGoPrevious()"
+                class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition duration-200"
+              >
+                Previous
+              </button>
+
+              <!-- Page numbers -->
+              @for (page of pageNumbers(); track page) {
+                <button
+                  (click)="goToPage(page)"
+                  [class]="
+                    page === currentPage()
+                      ? 'px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-md hover:bg-blue-700 transition duration-200'
+                      : 'px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition duration-200'
+                  "
+                >
+                  {{ page }}
+                </button>
+              }
+
+              <!-- Next button -->
+              <button
+                (click)="goToNextPage()"
+                [disabled]="!canGoNext()"
+                class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition duration-200"
+              >
+                Next
+              </button>
+            </nav>
+          </div>
+        }
       }
     </div>
   `
@@ -90,11 +136,45 @@ import { BookItemComponent } from './book-item.component';
 export class BookListComponent implements OnInit {
   private readonly bookApiClient = inject(BookApiClient);
 
+  // Make Math available in template
+  protected readonly Math = Math;
+
   pageSize = input<number>(10);
   books = signal<Book[]>([]);
   loading = signal(true);
   searchTerm = signal('');
   searchTimeout: any;
+
+  // Pagination state
+  currentPage = signal(1);
+  totalCount = signal(0);
+  totalPages = computed(() => Math.ceil(this.totalCount() / this.pageSize()));
+
+  // Pagination computed properties
+  canGoPrevious = computed(() => this.currentPage() > 1);
+  canGoNext = computed(() => this.currentPage() < this.totalPages());
+
+  // Generate page numbers for pagination UI
+  pageNumbers = computed(() => {
+    const current = this.currentPage();
+    const total = this.totalPages();
+    const pages: number[] = [];
+
+    // Show up to 5 page numbers
+    let start = Math.max(1, current - 2);
+    let end = Math.min(total, start + 4);
+
+    // Adjust start if we're near the end
+    if (end - start < 4) {
+      start = Math.max(1, end - 4);
+    }
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    return pages;
+  });
 
   // Model for ngModel binding
   get searchTermModel() {
@@ -108,11 +188,13 @@ export class BookListComponent implements OnInit {
     this.loadBooks();
   }
 
-  private loadBooks(search?: string): void {
+  private loadBooks(search?: string, page: number = 1): void {
     this.loading.set(true);
-    this.bookApiClient.getBooks(this.pageSize(), search).subscribe({
-      next: books => {
-        this.books.set(books);
+    this.bookApiClient.getBooksWithPagination(page, this.pageSize(), search).subscribe({
+      next: (response: PaginatedResponse<Book>) => {
+        this.books.set(response.data);
+        this.totalCount.set(response.totalCount);
+        this.currentPage.set(response.currentPage);
         this.loading.set(false);
       },
       error: error => {
@@ -126,12 +208,34 @@ export class BookListComponent implements OnInit {
     // Debounce search to avoid too many API calls while typing
     clearTimeout(this.searchTimeout);
     this.searchTimeout = setTimeout(() => {
-      this.loadBooks(this.searchTerm());
+      // Reset to first page when searching
+      this.currentPage.set(1);
+      this.loadBooks(this.searchTerm(), 1);
     }, 300);
   }
 
   clearSearch(): void {
     this.searchTerm.set('');
+    this.currentPage.set(1);
     this.loadBooks();
+  }
+
+  // Pagination methods
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages()) {
+      this.loadBooks(this.searchTerm() || undefined, page);
+    }
+  }
+
+  goToPreviousPage(): void {
+    if (this.canGoPrevious()) {
+      this.goToPage(this.currentPage() - 1);
+    }
+  }
+
+  goToNextPage(): void {
+    if (this.canGoNext()) {
+      this.goToPage(this.currentPage() + 1);
+    }
   }
 }
