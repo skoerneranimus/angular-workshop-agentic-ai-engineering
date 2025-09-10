@@ -1,108 +1,214 @@
-import { Component, ChangeDetectionStrategy, inject, signal, effect } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, ChangeDetectionStrategy, inject, signal, effect, input, computed } from '@angular/core';
+import { CommonModule, NgIf } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { BookApiClient } from './book-api-client.service';
 import { Book } from './book';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { map, tap, catchError, of } from 'rxjs';
 import { ToastService } from '../shared/toast.service';
+import { NgOptimizedImage } from '@angular/common';
 
 @Component({
   selector: 'app-book-edit',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, NgIf, NgOptimizedImage],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  templateUrl: './book-edit.component.html'
+  host: {
+    class: 'block p-4 space-y-4 max-w-xl',
+    '[class.loading]': 'loading()'
+  },
+  template: `
+    <h1 class="text-xl font-semibold">@if(bookId()) { Buch bearbeiten } @else { Neues Buch }</h1>
+    @if(error()) {
+      <p class="text-red-600">Fehler: {{ error() }}</p>
+    }
+    @if(loading()) {
+      <p>Lade...</p>
+    }
+    @if(!loading()) {
+      <form [formGroup]="form" (ngSubmit)="save()" class="space-y-3">
+        <div>
+          <label class="block text-sm font-medium mb-1" for="title">Titel</label>
+          <input
+            id="title"
+            type="text"
+            formControlName="title"
+            class="border rounded px-2 py-1 w-full"
+            [class.border-red-500]="titleInvalid()"
+            (blur)="touchTitle()"
+          />
+          @if(titleInvalid()) {
+            <small class="text-red-600">Titel erforderlich</small>
+          }
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="author">Autor</label>
+          <input
+            id="author"
+            type="text"
+            formControlName="author"
+            class="border rounded px-2 py-1 w-full"
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="price">Preis</label>
+          <input
+            id="price"
+            type="number"
+            formControlName="price"
+            class="border rounded px-2 py-1 w-full"
+            min="0"
+            step="0.01"
+          />
+        </div>
+        @if(currentCover()) {
+          <div>
+            <img
+              [ngSrc]="currentCover()!"
+              width="160"
+              height="240"
+              priority
+              alt="Cover"
+              class="rounded shadow"
+            />
+          </div>
+        }
+        <div class="pt-2 flex gap-2">
+          <button
+            type="submit"
+            class="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-40"
+            [disabled]="form.invalid || saving()"
+          >
+            @if(saving()) { Speichere... } @else { Speichern }
+          </button>
+          <button
+            type="button"
+            class="px-3 py-2 rounded border"
+            [disabled]="pristine() || saving()"
+            (click)="resetForm()"
+          >Reset</button>
+        </div>
+        @if(saved()) {
+          <p class="text-green-600">Gespeichert.</p>
+        }
+      </form>
+    }
+  `
 })
 export class BookEditComponent {
-  private readonly fb = inject(FormBuilder);
   private readonly api = inject(BookApiClient);
-  private readonly route = inject(ActivatedRoute);
+  private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
-  loading = signal(true);
-  error = signal<string | null>(null);
-  saving = signal(false);
-  book = signal<Book | null>(null);
+  // Optional: Buch-ID als Input (z.B. für Reuse in Dialogen)
+  readonly bookId = input<string | null>(null);
 
-  form = this.fb.nonNullable.group({
+  // State Signals
+  readonly loading = signal(false);
+  readonly saving = signal(false);
+  readonly saved = signal(false);
+  readonly error = signal<string | null>(null);
+  private readonly book = signal<Book | null>(null);
+
+  // Reactive Form
+  readonly form = this.fb.nonNullable.group({
     title: ['', [Validators.required]],
-    subtitle: [''],
-    author: [''],
-    publisher: [''],
-    numPages: [0],
-    price: [''],
-    cover: [''],
-    abstract: ['']
+    author: ['', [Validators.required]],
+    price: [0, [Validators.min(0)]],
+    cover: ['']
   });
 
-  // Param Id as signal
-  private readonly routeId = toSignal(
-    this.route.paramMap.pipe(map(pm => pm.get('id'))),
-    { initialValue: null }
-  );
+  // Abgeleitete Signale
+  readonly pristine = computed(() => this.form.pristine);
+  readonly currentCover = computed(() => this.form.controls.cover.value || null);
+  readonly titleInvalid = computed(() => {
+    const c = this.form.controls.title;
+    return c.invalid && (c.touched || c.dirty);
+  });
 
   constructor() {
     effect(() => {
-      const id = this.routeId();
-      if (id) {
-        this.fetch(id);
+      const id = this.bookId();
+      if (!id) {
+        this.book.set(null);
+        this.form.reset({
+          title: '',
+          author: '',
+          price: 0,
+          cover: ''
+        });
+        return;
       }
+      this.fetchBook(id);
     });
   }
 
-  private fetch(id: string) {
+  private fetchBook(id: string): void {
     this.loading.set(true);
     this.error.set(null);
-    this.api.getBook(id).pipe(
-      tap(book => {
-        this.book.set(book);
-        this.form.patchValue({
-          title: book.title,
-          subtitle: book.subtitle ?? '',
-          author: book.author,
-            publisher: book.publisher,
-          numPages: book.numPages,
-          price: book.price,
-          cover: book.cover,
-          abstract: book.abstract
+    this.api.getBook(id).subscribe({
+      next: b => {
+        this.book.set(b);
+        this.form.reset({
+          title: b.title,
+          author: b.author,
+          price: b.price,
+          cover: b.cover ?? ''
         });
-      }),
-      catchError(err => {
-        console.error(err);
-        this.error.set('Buch konnte nicht geladen werden.');
-        return of(null);
-      })
-    ).subscribe(() => this.loading.set(false));
+      },
+      error: err => this.error.set('Konnte Buch nicht laden'),
+      complete: () => this.loading.set(false)
+    });
   }
 
-  reload() {
-    const id = this.routeId();
-    if (id) this.fetch(id);
+  touchTitle(): void {
+    this.form.controls.title.markAsTouched();
   }
 
-  onCancel() {
-    // Zurück zur Liste oder Detail (Detail existiert noch nicht)
-    this.router.navigate(['/']);
-  }
-
-  onSubmit() {
-    if (this.form.invalid || this.saving()) return;
-    const id = this.book()?.id;
-    if (!id) return;
+  save(): void {
+    if (this.form.invalid) return;
     this.saving.set(true);
-    this.api.updateBook(id, this.form.getRawValue()).pipe(
-      tap(updated => {
+    this.saved.set(false);
+    const value = this.form.getRawValue();
+    const payload = {
+      title: value.title,
+      author: value.author,
+      price: value.price,
+      cover: value.cover || undefined
+    };
+    const id = this.bookId();
+    const obs = id ? this.api.updateBook(id, payload) : this.api.createBook(payload);
+    obs.subscribe({
+      next: savedBook => {
+        this.book.set(savedBook);
+        this.saved.set(true);
+        this.form.markAsPristine();
         this.toast.show('Buch gespeichert');
-        this.book.set(updated);
         this.router.navigate(['/']);
-      }),
-      catchError(err => {
-        console.error(err);
-        this.toast.show('Speichern fehlgeschlagen');
-        return of(null);
-      })
-    ).subscribe(() => this.saving.set(false));
+      },
+      error: () => this.error.set('Speichern fehlgeschlagen'),
+      complete: () => this.saving.set(false)
+    });
+  }
+
+  resetForm(): void {
+    const b = this.book();
+    if (b) {
+      this.form.reset({
+        title: b.title,
+        author: b.author,
+        price: b.price,
+        cover: b.cover ?? ''
+      });
+    } else {
+      this.form.reset({
+        title: '',
+        author: '',
+        price: 0,
+        cover: ''
+      });
+    }
+    this.form.markAsPristine();
+    this.saved.set(false);
   }
 }
