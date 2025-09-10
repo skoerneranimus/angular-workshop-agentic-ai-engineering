@@ -68,7 +68,7 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-800 mb-1">Preis</label>
-              <input formControlName="price" type="text" placeholder="z.B. 19.90 €" class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
+              <input formControlName="price" type="number" step="0.01" min="0" placeholder="z.B. 19.90" class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-800 mb-1">Cover URL</label>
@@ -97,4 +97,3 @@
     </div>
   }
 </div>
-

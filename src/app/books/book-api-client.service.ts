@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { Book } from './book';
 
 @Injectable({ providedIn: 'root' })
@@ -9,24 +9,32 @@ export class BookApiClient {
 
   constructor(private http: HttpClient) {}
 
+  private mapBook = (raw: any): Book => ({
+    ...raw,
+    price: parseFloat(raw.price as string) || 0
+  });
+
+  private mapBooks = (raw: any[]): Book[] => raw.map(this.mapBook);
+
   getBooks(pageSize: number = 10, searchTerm?: string): Observable<Book[]> {
     let params = new HttpParams().set('_limit', pageSize.toString());
 
     if (searchTerm) {
-      // Search in title and author fields
       params = params.set('q', searchTerm);
     }
 
-    return this.http.get<Book[]>(this.apiUrl, { params });
+    return this.http.get<any[]>(this.apiUrl, { params }).pipe(map(this.mapBooks));
   }
 
-  // Neues: Einzelnes Buch laden
   getBook(id: string): Observable<Book> {
-    return this.http.get<Book>(`${this.apiUrl}/${id}`);
+    return this.http.get<any>(`${this.apiUrl}/${id}`).pipe(map(this.mapBook));
   }
 
-  // Neues: Buch aktualisieren (PATCH für Partial Update)
   updateBook(id: string, changes: Partial<Book>): Observable<Book> {
-    return this.http.patch<Book>(`${this.apiUrl}/${id}`, changes);
+    const body: any = { ...changes };
+    if (body.price != null) {
+      body.price = body.price.toString();
+    }
+    return this.http.patch<any>(`${this.apiUrl}/${id}`, body).pipe(map(this.mapBook));
   }
 }

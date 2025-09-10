@@ -38,7 +38,7 @@ export class BookEditComponent {
     author: [''],
     publisher: [''],
     numPages: [0],
-    price: [0, [Validators.min(0)]], // als number im Formular, Backend-Modell string
+    price: [0, [Validators.min(0)]], // jetzt als number im Modell
     cover: [''],
     abstract: ['']
   });
@@ -79,7 +79,7 @@ export class BookEditComponent {
           author: b.author,
           publisher: b.publisher,
           numPages: b.numPages,
-          price: parseFloat(b.price) || 0,
+          price: b.price,
           cover: b.cover,
           abstract: b.abstract
         });
@@ -108,7 +108,7 @@ export class BookEditComponent {
     this.saving.set(true);
     const changes: Partial<Book> = {
       ...this.form.getRawValue(),
-      price: this.form.controls.price.value.toString()
+      price: this.form.controls.price.value
     };
     this.api.updateBook(id, changes).subscribe({
       next: updated => {

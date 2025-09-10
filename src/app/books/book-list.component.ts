@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal, input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -8,7 +8,7 @@ import { BookApiClient } from './book-api-client.service';
 @Component({
   selector: 'app-book-list',
   // standalone Flag laut Projekt-Guidelines weggelassen
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, NgOptimizedImage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="container mx-auto px-4 py-12 max-w-7xl">
@@ -47,7 +47,9 @@ import { BookApiClient } from './book-api-client.service';
               <a [routerLink]="['/books', book.id]" class="block relative aspect-[3/4] overflow-hidden">
                 @if (book.cover) {
                   <img
-                    [src]="book.cover"
+                    [ngSrc]="book.cover"
+                    width="160"
+                    height="240"
                     [alt]="book.title"
                     class="w-full h-full object-contain bg-gray-100"
                     loading="lazy"

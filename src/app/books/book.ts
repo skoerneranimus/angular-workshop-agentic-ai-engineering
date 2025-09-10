@@ -6,7 +6,7 @@ export interface Book {
   author: string;
   publisher: string;
   numPages: number;
-  price: string;
+  price: number; // war string, nun number
   cover: string;
   abstract: string;
   userId: number;
