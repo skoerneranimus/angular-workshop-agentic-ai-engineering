@@ -3,5 +3,8 @@ import { BookListComponent } from './books/book-list.component';
 
 export const routes: Routes = [
   { path: '', component: BookListComponent },
+  { path: 'books/:id/edit', loadComponent: () => import('./books/book-edit.component').then(m => m.BookEditComponent) },
+  // Optional: Platzhalter für zukünftige Detailansicht, damit 404 vermieden wird
+  // { path: 'books/:id', loadComponent: () => import('./books/book-detail.component').then(m => m.BookDetailComponent) },
   { path: '**', redirectTo: '' }
 ];

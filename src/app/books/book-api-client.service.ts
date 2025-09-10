@@ -19,4 +19,14 @@ export class BookApiClient {
 
     return this.http.get<Book[]>(this.apiUrl, { params });
   }
+
+  // Neues: Einzelnes Buch laden
+  getBook(id: string): Observable<Book> {
+    return this.http.get<Book>(`${this.apiUrl}/${id}`);
+  }
+
+  // Neues: Buch aktualisieren (PATCH für Partial Update)
+  updateBook(id: string, changes: Partial<Book>): Observable<Book> {
+    return this.http.patch<Book>(`${this.apiUrl}/${id}`, changes);
+  }
 }
