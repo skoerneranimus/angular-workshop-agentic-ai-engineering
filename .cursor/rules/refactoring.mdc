@@ -1,0 +1,10 @@
+---
+description: 'Instructions to refactor Angular building-blocks: components, services, pipes, directives'
+alwaysApply: false
+---
+
+## Component
+
+### Decorator
+
+- Remove `standalone: true` if present.
