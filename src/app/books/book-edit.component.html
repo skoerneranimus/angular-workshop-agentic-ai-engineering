@@ -5,7 +5,7 @@
       <button type="button" (click)="onCancel()" class="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium px-4 py-2 transition">
         Cancel
       </button>
-      <button type="button" (click)="onSubmit()" [disabled]="saving() || form.invalid" class="inline-flex items-center gap-2 rounded-md bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 transition">
+      <button type="button" (click)="onSubmit()" [disabled]="!canSave()" class="inline-flex items-center gap-2 rounded-md bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 transition">
         @if (!saving()) { <span>Save</span> } @else {
           <span class="inline-flex items-center gap-2">
             <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -36,53 +36,54 @@
         <div class="grid md:grid-cols-2 gap-8">
           <div class="space-y-6">
             <div>
-              <label class="flex items-center gap-1 text-sm font-medium text-gray-800 mb-1">Title <span class="text-red-600">*</span></label>
-              <input formControlName="title" type="text"
+              <label for="title" class="flex items-center gap-1 text-sm font-medium text-gray-800 mb-1">Title <span class="text-red-600">*</span></label>
+              <input id="title" formControlName="title" type="text"
                      placeholder="Enter title"
                      aria-required="true"
                      [attr.aria-invalid]="form.get('title')?.invalid && form.get('title')?.touched"
+                     [attr.aria-describedby]="form.get('title')?.invalid && form.get('title')?.touched ? 'title-error' : null"
                      class="w-full rounded-md border bg-white px-3 py-2 text-sm outline-none shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition border-gray-300"
                      [class.border-red-500]="form.get('title')?.invalid && form.get('title')?.touched"
                      [class.focus:ring-red-500]="form.get('title')?.invalid && form.get('title')?.touched" />
               @if (form.get('title')?.invalid && form.get('title')?.touched) {
-                <p class="text-xs text-red-600 mt-1">Required field.</p>
+                <p id="title-error" class="text-xs text-red-600 mt-1" role="alert">Required field.</p>
               }
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-800 mb-1">Subtitle</label>
-              <input formControlName="subtitle" type="text" placeholder="Subtitle" class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
+              <label for="subtitle" class="block text-sm font-medium text-gray-800 mb-1">Subtitle</label>
+              <input id="subtitle" formControlName="subtitle" type="text" placeholder="Subtitle" class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-800 mb-1">Author</label>
-              <input formControlName="author" type="text" placeholder="Author" class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
+              <label for="author" class="block text-sm font-medium text-gray-800 mb-1">Author</label>
+              <input id="author" formControlName="author" type="text" placeholder="Author" class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-800 mb-1">Publisher</label>
-              <input formControlName="publisher" type="text" placeholder="Publisher" class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
+              <label for="publisher" class="block text-sm font-medium text-gray-800 mb-1">Publisher</label>
+              <input id="publisher" formControlName="publisher" type="text" placeholder="Publisher" class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
             </div>
           </div>
           <div class="space-y-6">
             <div>
-              <label class="block text-sm font-medium text-gray-800 mb-1">Pages</label>
-              <input formControlName="numPages" type="number" min="1" placeholder="e.g. 320" class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
+              <label for="numPages" class="block text-sm font-medium text-gray-800 mb-1">Pages</label>
+              <input id="numPages" formControlName="numPages" type="number" min="1" placeholder="e.g. 320" class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-800 mb-1">Price</label>
-              <input formControlName="price" type="number" step="0.01" min="0" placeholder="e.g. 19.90" class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
+              <label for="price" class="block text-sm font-medium text-gray-800 mb-1">Price</label>
+              <input id="price" formControlName="price" type="number" step="0.01" min="0" placeholder="e.g. 19.90" class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-800 mb-1">Cover URL</label>
-              <input formControlName="cover" type="url" placeholder="https://..." class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
+              <label for="cover" class="block text-sm font-medium text-gray-800 mb-1">Cover URL</label>
+              <input id="cover" formControlName="cover" type="url" placeholder="https://..." class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
             </div>
           </div>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-800 mb-1">Description</label>
-          <textarea formControlName="abstract" rows="6" placeholder="Book description" class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm leading-relaxed outline-none shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"></textarea>
+          <label for="abstract" class="block text-sm font-medium text-gray-800 mb-1">Description</label>
+          <textarea id="abstract" formControlName="abstract" rows="6" placeholder="Book description" class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm leading-relaxed outline-none shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"></textarea>
         </div>
         <div class="pt-2 flex justify-end gap-3">
           <button type="button" (click)="onCancel()" class="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium px-4 py-2 transition">Cancel</button>
-          <button type="submit" [disabled]="saving() || form.invalid" class="inline-flex items-center gap-2 rounded-md bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 transition">
+          <button type="submit" [disabled]="!canSave()" class="inline-flex items-center gap-2 rounded-md bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 transition">
             @if (!saving()) { <span>Save</span> } @else {
               <span class="inline-flex items-center gap-2">
                 <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">

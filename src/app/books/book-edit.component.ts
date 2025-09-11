@@ -1,6 +1,5 @@
 import { Component, ChangeDetectionStrategy, inject, signal, effect, input, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, Validators, FormGroup, FormControl } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BookApiClient } from './book-api-client.service';
 import { Book } from './book';
@@ -10,7 +9,7 @@ import { map } from 'rxjs';
 
 @Component({
   selector: 'app-book-edit',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block'
@@ -32,13 +31,22 @@ export class BookEditComponent {
   readonly error = signal<string | null>(null);
   private readonly book = signal<Book | null>(null);
 
-  readonly form = this.fb.nonNullable.group({
+  readonly form: FormGroup<{
+    title: FormControl<string>;
+    subtitle: FormControl<string>;
+    author: FormControl<string>;
+    publisher: FormControl<string>;
+    numPages: FormControl<number>;
+    price: FormControl<number>;
+    cover: FormControl<string>;
+    abstract: FormControl<string>;
+  }> = this.fb.nonNullable.group({
     title: ['', [Validators.required]],
     subtitle: [''],
     author: [''],
     publisher: [''],
     numPages: [0],
-    price: [0, [Validators.min(0)]], // now as number in the model
+    price: [0, [Validators.min(0)]],
     cover: [''],
     abstract: ['']
   });
@@ -48,7 +56,9 @@ export class BookEditComponent {
     { initialValue: null }
   );
 
+  readonly formValid = computed(() => this.form.valid);
   readonly formInvalid = computed(() => this.form.invalid);
+  readonly canSave = computed(() => this.formValid() && !this.saving());
 
   constructor() {
     effect(() => {
@@ -85,7 +95,7 @@ export class BookEditComponent {
         });
       },
       error: err => {
-        console.error(err);
+        console.error('Error loading book:', err);
         this.error.set('Book could not be loaded.');
       },
       complete: () => this.loading.set(false)
@@ -118,7 +128,7 @@ export class BookEditComponent {
         this.router.navigate(['/']);
       },
       error: err => {
-        console.error(err);
+        console.error('Error saving book:', err);
         this.toast.show('Save failed');
       },
       complete: () => this.saving.set(false)
