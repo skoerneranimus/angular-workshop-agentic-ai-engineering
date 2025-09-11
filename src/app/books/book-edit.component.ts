@@ -30,6 +30,7 @@ export class BookEditComponent {
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);
   private readonly book = signal<Book | null>(null);
+  private readonly formStatusSignal = signal<string>('INVALID');
 
   readonly form: FormGroup<{
     title: FormControl<string>;
@@ -56,11 +57,23 @@ export class BookEditComponent {
     { initialValue: null }
   );
 
-  readonly formValid = computed(() => this.form.valid);
-  readonly formInvalid = computed(() => this.form.invalid);
+  readonly formValid = computed(() => {
+    return this.formStatusSignal() === 'VALID';
+  });
+  readonly formInvalid = computed(() => {
+    return this.formStatusSignal() === 'INVALID';
+  });
   readonly canSave = computed(() => this.formValid() && !this.saving());
 
   constructor() {
+    // Subscribe to form status changes
+    this.form.statusChanges.subscribe(status => {
+      this.formStatusSignal.set(status);
+    });
+    
+    // Initial status
+    this.formStatusSignal.set(this.form.status);
+
     effect(() => {
       const explicit = this.bookId();
       const fromRoute = this.routeId();
@@ -68,9 +81,10 @@ export class BookEditComponent {
       if (!id) {
         this.loading.set(false);
         this.book.set(null);
-        this.form.reset({
+        this.form.patchValue({
           title: '', subtitle: '', author: '', publisher: '', numPages: 0, price: 0, cover: '', abstract: ''
         });
+        this.form.markAsPristine();
         return;
       }
       this.fetch(id);
@@ -83,7 +97,7 @@ export class BookEditComponent {
     this.api.getBook(id).subscribe({
       next: b => {
         this.book.set(b);
-        this.form.reset({
+        this.form.patchValue({
           title: b.title,
           subtitle: b.subtitle ?? '',
           author: b.author,
@@ -93,6 +107,9 @@ export class BookEditComponent {
           cover: b.cover,
           abstract: b.abstract
         });
+        this.form.markAsPristine();
+        // Ensure form status is updated
+        this.formStatusSignal.set(this.form.status);
       },
       error: err => {
         console.error('Error loading book:', err);
