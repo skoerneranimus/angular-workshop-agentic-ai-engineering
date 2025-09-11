@@ -40,6 +40,23 @@ server.registerTool(
   }
 );
 
+// Objective: Add a new MCP tool that can execute Angular migrations from angular.dev - Migrations.
+server.registerTool(
+  'execute_angular_migration',
+  {
+    title: 'Execute Angular Migration',
+    description: 'Executes an Angular migration from angular.dev - Migrations',
+    inputSchema: {
+      migration: z.string().describe('Migration name'),
+    }
+  },
+  async ({ migration }: { migration: string }) => {
+    const cliCommand = `ng generate ${migration}`;
+    const result = await exec(cliCommand, { cwd: dirname(dirname(__dirname)) });
+    return { content: [{ type: 'text', text: `✅ Migration executed successfully:\n${result.stdout}` }] };
+  }
+);
+
 // Start listening for MCP messages on STDIN/STDOUT
 const transport = new StdioServerTransport();
 
