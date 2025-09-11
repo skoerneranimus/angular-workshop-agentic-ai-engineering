@@ -216,7 +216,6 @@ export class Pagination {
   }
 
   onPageSizeModelChange(newPageSize: number): void {
-    console.log('Page size model changed to:', newPageSize);
     this.pageChange.emit({ page: 1, pageSize: newPageSize });
   }
 

@@ -54,11 +54,9 @@ export class BookListComponent {
     
     this.api.getBooksWithPagination(page, size, search).subscribe({
       next: response => {
-        console.log('API response received:', response.pagination);
         this.books.set(response.data);
         this.pagination.set(response.pagination);
         this.currentPage.set(response.pagination.currentPage);
-        console.log('Final pagination state:', this.pagination());
         this.loading.set(false);
       },
       error: err => {
@@ -91,9 +89,6 @@ export class BookListComponent {
   }
 
   onPageChange(event: PageChangeEvent): void {
-    console.log('PageChange event received:', event);
-    console.log('Current pagination before update:', this.pagination());
-    
     this.loadBooksWithPagination(event.page, event.pageSize, this.searchTerm() || undefined);
   }
 
