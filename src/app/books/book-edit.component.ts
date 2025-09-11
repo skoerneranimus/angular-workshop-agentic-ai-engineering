@@ -24,7 +24,7 @@ export class BookEditComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly toast = inject(ToastService);
 
-  // Optional: externe Steuerung (z.B. Dialog). Wenn nicht gesetzt, wird Route Param verwendet.
+  // Optional: external control (e.g. Dialog). If not set, route param is used.
   readonly bookId = input<string | null>(null);
 
   readonly loading = signal(true);
@@ -38,7 +38,7 @@ export class BookEditComponent {
     author: [''],
     publisher: [''],
     numPages: [0],
-    price: [0, [Validators.min(0)]], // jetzt als number im Modell
+    price: [0, [Validators.min(0)]], // now as number in the model
     cover: [''],
     abstract: ['']
   });
@@ -86,7 +86,7 @@ export class BookEditComponent {
       },
       error: err => {
         console.error(err);
-        this.error.set('Buch konnte nicht geladen werden.');
+        this.error.set('Book could not be loaded.');
       },
       complete: () => this.loading.set(false)
     });
@@ -101,7 +101,7 @@ export class BookEditComponent {
     this.router.navigate(['/']);
   }
 
-  onSubmit(): void { // genutzt vom externen Template
+  onSubmit(): void { // used by external template
     if (this.form.invalid || this.saving()) return;
     const id = this.book()?.id || this.bookId() || this.routeId();
     if (!id) return;
@@ -113,18 +113,18 @@ export class BookEditComponent {
     this.api.updateBook(id, changes).subscribe({
       next: updated => {
         this.book.set(updated);
-        this.toast.show('Buch gespeichert');
+        this.toast.show('Book saved');
         this.form.markAsPristine();
         this.router.navigate(['/']);
       },
       error: err => {
         console.error(err);
-        this.toast.show('Speichern fehlgeschlagen');
+        this.toast.show('Save failed');
       },
       complete: () => this.saving.set(false)
     });
   }
 
-  // Kompatibilität zur alten Inline-Variante
+  // Compatibility with old inline variant
   save(): void { this.onSubmit(); }
 }
