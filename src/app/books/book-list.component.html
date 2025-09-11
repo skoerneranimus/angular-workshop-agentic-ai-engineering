@@ -29,7 +29,7 @@
     </div>
   } @else {
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-8">
-      @for (book of books(); track trackById) {
+      @for (book of books(); track trackById($index, book)) {
         <div class="relative group bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full">
           <a [routerLink]="['/books', book.id]" class="block relative aspect-[3/4] overflow-hidden">
             @if (book.cover) {
@@ -94,5 +94,19 @@
         </div>
       }
     </div>
+
+    <!-- Pagination -->
+    @if (!loading() && books().length > 0) {
+      <app-pagination
+        [currentPage]="pagination().currentPage"
+        [totalPages]="pagination().totalPages"
+        [totalItems]="pagination().totalItems"
+        [pageSize]="pagination().pageSize"
+        [showPageSizeSelector]="true"
+        [pageSizeOptions]="[5, 10, 25, 50]"
+        (pageChange)="onPageChange($event)"
+        class="mt-8"
+      />
+    }
   }
 </div>
